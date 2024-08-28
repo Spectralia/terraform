@@ -9,18 +9,21 @@ import boto3.s3
 # import time
 
 s3Bucket = "learngpt-s3"
-t_delta = datetime.timedelta(hours=-8)
-PST = datetime.timezone(t_delta, "PST")
-now = datetime.datetime(PST)
+# t_delta = datetime.timedelta(hours=-8)
+# PST = datetime.timezone(t_delta, "PST")
+# now = datetime.datetime(PST)
+fileNum = random.randint(0, 4294967295)
 
 
 def main(event, context):
     response_body = "No body"
     client_body = event["body"]
+    # http_method = event.get("httpMethod", None)
     http_method = event["httpMethod"]
+    # http_method = "POST"
     if client_body and http_method:
         if http_method == "POST":
-            response_body = ""
+            response_body = generateImageBySDML(client_body)
     return {
         "statusCode": 200,
         "body": response_body,
@@ -41,11 +44,12 @@ def generateImageBySDML(client_body):
         body=json.dumps(
             {
                 "text_prompts": [{"text": input_prompt}],
-                "cfg_scale": 20,
-                "samples": 1,
-                "steps": seed,
-                "height": 900,
-                "width": 1440,
+                # "cfg_scale": 20,
+                # "samples": 1,
+                # "steps": 30,
+                # "seed":seed
+                "height": 768,
+                "width": 1344,
                 "style_preset": "photographic",
             }
         ),
@@ -54,7 +58,8 @@ def generateImageBySDML(client_body):
     response_bedrock_base64 = response_bedrock_byte["artifacts"][0]["base64"]
     response_bedrock_finalImage = base64.b64decode(response_bedrock_base64)
 
-    imageName = "imageName_" + now.strftime("%Y%m%d%H%M%S") + ".png"
+    # imageName = "imageName_" + now.strftime("%Y%m%d%H%M%S") + ".png"
+    imageName = "imageName_" + str(fileNum) + ".png"
     response_s3 = client_s3.put_object(
         Bucket=s3Bucket, Body=response_bedrock_finalImage, Key=imageName
     )
