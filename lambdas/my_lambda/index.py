@@ -1,19 +1,12 @@
 import json
 import time
 import boto3
-import base64
-import datetime
-import random
+
 
 import boto3
 
-# import time
 
 s3Bucket = "learngpt-s3"
-# t_delta = datetime.timedelta(hours=-8)
-# PST = datetime.timezone(t_delta, "PST")
-# now = datetime.datetime(PST)
-fileNum = random.randint(0, 4294967295)
 
 
 def main(event, context):
@@ -25,7 +18,7 @@ def main(event, context):
     # http_method = "POST"
     if client_body and http_method:
         if http_method == "POST":
-            response_body = generateImageBySDML(client_body)
+            response_body = generateTextByTitan(client_body)
     end_time = time.time()
     execution_time = "Program Run Time : %.2f sec" % (end_time - start_time)
 
@@ -36,7 +29,7 @@ def main(event, context):
     }
 
 
-def generateImageBySDML(client_prompt):
+def generateTextByTitan(client_prompt):
     client_bedrock = boto3.client("bedrock-runtime")
     client_s3 = boto3.client("s3")
     input_prompt = """{}""".format(client_prompt)
@@ -44,16 +37,12 @@ def generateImageBySDML(client_prompt):
         contentType="application/json",
         accept="application/json",
         # modelId="stability.stable-diffusion-xl-v1",
-        modelId="amazon.titan-text-premier-v1:0",
+        modelId="anthropic.claude-3-haiku-20240307-v1:0",
         body=json.dumps(
             {
-                "inputText": input_prompt,
-                "textGenerationConfig": {
-                    "maxTokenCount": 1000,
-                    "stopSequences": [],
-                    "temperature": 0.7,
-                    "topP": 0.9,
-                },
+                "max_tokens": 256,
+                "messages": [{"role": "user", "content": input_prompt}],
+                "anthropic_version": "bedrock-2023-05-31",
             }
         ),
     )
@@ -61,4 +50,4 @@ def generateImageBySDML(client_prompt):
     finish_reason = response_body.get("error")
     if finish_reason is not None:
         raise Exception(f"Text generation error. Error is {finish_reason}")
-    return response_body["results"][0]["outputText"]
+    return response_body["content"][0]["text"]
